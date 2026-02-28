@@ -28,6 +28,8 @@ import java.util.Objects;
 
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
+import static com.duckyduck246.chestforensics.ChestForensicsClient.loggingMode;
+
 public class PuedoItem {
     public final int count;
     public final String name;
@@ -38,7 +40,8 @@ public class PuedoItem {
         itemComponents = m.toString();
         name = n;
         nbt = a;
-        //ChestForensicsClient.LOGGER.info("new PuedoItem created: count: " + c + "componets: " + m + "nbt: " + a);
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("new PuedoItem created: count: " + c + "componets: " + m + "nbt: " + a);
     }
     public String getString(){
         return count + "x " + name +  "            " + itemComponents.toString() + "             " + nbt;

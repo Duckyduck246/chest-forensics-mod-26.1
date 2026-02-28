@@ -37,6 +37,8 @@ import java.util.Objects;
 
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
+import static com.duckyduck246.chestforensics.ChestForensicsClient.loggingMode;
+
 public class ContainerInfo {
     
     public String type;
@@ -67,9 +69,11 @@ public class ContainerInfo {
     public ContainerInfo(String t, BlockPos p, ArrayList<ItemStack> i, ArrayList<String> a, Identifier b){
         type = t;
         pos = p;
-        //ChestForensicsClient.LOGGER.info("before:" + i);
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("before:" + i);
         items = ForensicsNbt.toJsonString(i);
-        //ChestForensicsClient.LOGGER.info("after" + items);
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("after" + items);
         tags = a;
         dimension = b;
         id = "containerId:" + type + pos.toString() + dimension.toString();
@@ -103,20 +107,25 @@ public class ContainerInfo {
     }
     
     public void logInfo(){
-        ChestForensicsClient.LOGGER.info("type: " + type);
-        ChestForensicsClient.LOGGER.info("tags: " + tags);
-        ChestForensicsClient.LOGGER.info("direction: " + dir);
-        ChestForensicsClient.LOGGER.info(id);
-        ChestForensicsClient.LOGGER.info("isDoubleChest? " + doubleChest);
-        ChestForensicsClient.LOGGER.info("pos: " + pos);
-        if(doubleChest){
-            ChestForensicsClient.LOGGER.info("other pos: " + id);
+        if(loggingMode > 0) {
+            ChestForensicsClient.LOGGER.info("type: " + type);
+            ChestForensicsClient.LOGGER.info("tags: " + tags);
+            ChestForensicsClient.LOGGER.info("direction: " + dir);
+            ChestForensicsClient.LOGGER.info(id);
+            ChestForensicsClient.LOGGER.info("isDoubleChest? " + doubleChest);
+            ChestForensicsClient.LOGGER.info("pos: " + pos);
         }
-        //ChestForensicsClient.LOGGER.info("items: " + items);
+        if(doubleChest){
+            if(loggingMode > 0)
+                ChestForensicsClient.LOGGER.info("other pos: " + id);
+        }
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("items: " + items);
     }
     
     public void logTotal(){
-        ChestForensicsClient.LOGGER.info("" + total);
+        if(loggingMode > 0)
+            ChestForensicsClient.LOGGER.info("" + total);
     }
 
     public static ArrayList<ItemStack> listItems(int mode){
@@ -127,7 +136,8 @@ public class ContainerInfo {
                     if (client.currentScreen instanceof HandledScreen<?> handledScreen) {
                         ScreenHandler handler = handledScreen.getScreenHandler();
                         ArrayList<ItemStack> items = new ArrayList<ItemStack>();
-                        ChestForensicsClient.LOGGER.info("slots: " + handler.slots.size());
+                        if(loggingMode > 0)
+                            ChestForensicsClient.LOGGER.info("slots: " + handler.slots.size());
                         for (int a = 0; a < handler.slots.size(); a++) {
                             ItemStack stack = handler.getSlot(a).getStack();
                             if (!(handler.getSlot(a).inventory instanceof PlayerInventory)) {
@@ -135,20 +145,24 @@ public class ContainerInfo {
                                 String nameOfItem = stack.getItem().getName().getString();
                                 String dataOfItem = stack.getComponents().toString();
                                 int count = stack.getCount();
-                                //ChestForensicsClient.LOGGER.info(a + ": " + count + "x " + nameOfItem + "      (" + dataOfItem + ")");
+                                if(loggingMode > 2)
+                                    ChestForensicsClient.LOGGER.info(a + ": " + count + "x " + nameOfItem + "      (" + dataOfItem + ")");
                             }
                             else {
                             }
                         }
-                        ChestForensicsClient.LOGGER.info("returned items");
+                        if(loggingMode > 0)
+                            ChestForensicsClient.LOGGER.info("returned items");
                         return items;
                     }
                     else{
-                        ChestForensicsClient.LOGGER.info("current screen is not an instance of handled screen");
+                        if(loggingMode > 0)
+                            ChestForensicsClient.LOGGER.info("current screen is not an instance of handled screen");
                     }
                 }
                 else{
-                    ChestForensicsClient.LOGGER.info("client.player or client.player.currentScreenHandler is null");
+                    if(loggingMode > 0)
+                        ChestForensicsClient.LOGGER.info("client.player or client.player.currentScreenHandler is null");
                 }
                 break;
             case 2:
@@ -177,12 +191,17 @@ public class ContainerInfo {
     }
 
     public static ArrayList<PuedoItem> compareItems(ArrayList<ItemStack> oldStack, ArrayList<ItemStack> currentStack){
-        ChestForensicsClient.LOGGER.info("compareItems method called");
+        if(loggingMode > 0)
+            ChestForensicsClient.LOGGER.info("compareItems method called");
         ArrayList<PuedoItem> diff = new ArrayList<>();
-        //ChestForensicsClient.LOGGER.info("old contents: " + oldStack);
-        //ChestForensicsClient.LOGGER.info("new contents: " + currentStack);
-        ChestForensicsClient.LOGGER.info("old size: " + oldStack.size());
-        ChestForensicsClient.LOGGER.info("new size: " + currentStack.size());
+        if(loggingMode > 2) {
+            ChestForensicsClient.LOGGER.info("old contents: " + oldStack);
+            ChestForensicsClient.LOGGER.info("new contents: " + currentStack);
+        }
+        if(loggingMode > 0) {
+            ChestForensicsClient.LOGGER.info("old size: " + oldStack.size());
+            ChestForensicsClient.LOGGER.info("new size: " + currentStack.size());
+        }
 
         for(int i = 0; i < oldStack.size(); i++){
             if(i < currentStack.size()){
@@ -194,12 +213,15 @@ public class ContainerInfo {
                 int countB = itemStackB.getCount();
                 if(!((stackA.equals(stackB)) && (countA == countB))) {
                     if (stackA.equals(stackB)) {
-                        //ChestForensicsClient.LOGGER.info("index: " + i);
+                        if(loggingMode > 2)
+                            ChestForensicsClient.LOGGER.info("index: " + i);
                         PuedoItem itemStack = new PuedoItem(itemStackB.getCount() - itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getName().getString(), stackA);
                         diff.add(itemStack);
                     } else {
-                        //ChestForensicsClient.LOGGER.info("index: " + i);
-                        //ChestForensicsClient.LOGGER.info(itemStackB.getComponents().toString());
+                        if(loggingMode > 2) {
+                            ChestForensicsClient.LOGGER.info("index: " + i);
+                            ChestForensicsClient.LOGGER.info(itemStackB.getComponents().toString());
+                        }
                         PuedoItem itemStack1 = new PuedoItem(-itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getName().getString(), stackA);
                         diff.add(itemStack1);
                         PuedoItem itemStack2 = new PuedoItem(itemStackB.getCount(), itemStackB.getComponents(), itemStackB.getName().getString(), stackB);
@@ -208,7 +230,8 @@ public class ContainerInfo {
                 }
             }
         }
-        //ChestForensicsClient.LOGGER.info("returned diff: " + diff);
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("returned diff: " + diff);
         return diff;
     }
 
@@ -233,7 +256,8 @@ public class ContainerInfo {
         World world = client.world;
         if(world != null){
             Identifier dimensionId = world.getRegistryKey().getValue();
-            ChestForensicsClient.LOGGER.info("dimension: " + dimensionId);
+            if(loggingMode > 0)
+                ChestForensicsClient.LOGGER.info("dimension: " + dimensionId);
             return dimensionId;
         }
         return null;

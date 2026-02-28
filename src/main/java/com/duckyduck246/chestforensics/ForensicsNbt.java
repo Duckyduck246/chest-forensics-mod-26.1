@@ -10,6 +10,8 @@ import net.minecraft.client.MinecraftClient;
 
 import java.util.ArrayList;
 
+import static com.duckyduck246.chestforensics.ChestForensicsClient.loggingMode;
+
 public class ForensicsNbt {
 
     public static ArrayList<String> toJsonString(ArrayList<ItemStack> stacks) {
@@ -60,14 +62,17 @@ public class ForensicsNbt {
             return result.result().orElse(ItemStack.EMPTY);
             
         } catch(Exception e){}
-        ChestForensicsClient.LOGGER.info("failed to get itemstack from json string");
+        if(loggingMode > 0)
+            ChestForensicsClient.LOGGER.info("failed to get itemstack from json string");
         return ItemStack.EMPTY;
     }
     public static String normalize(String json){
         JsonElement root = JsonParser.parseString(json);
-        //ChestForensicsClient.LOGGER.info("before sorting: " + norm(root));
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("before sorting: " + norm(root));
         JsonElement normalized = sort(norm(root));
-        //ChestForensicsClient.LOGGER.info("after sorting: " + normalized);
+        if(loggingMode > 2)
+            ChestForensicsClient.LOGGER.info("after sorting: " + normalized);
         return normalized.toString();
     }
     public static JsonElement norm(JsonElement json){
