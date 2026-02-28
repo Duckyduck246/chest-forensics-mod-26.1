@@ -22,11 +22,11 @@ Publish sometime?? ‎
 **To do:**
 -  [ ] Make the chat text clickable to print the entire NBT componentMap thingy
 -  [x] Fix the double chest diff positions bug thingy
--  [ ] Export allContainers to JSON instead of text, OR find a way to reliably parse the text
+-  [x] Export allContainers to JSON instead of text, OR find a way to reliably parse the text
 -  [ ] Make a GUI element in the open containers UI, that displays the missing items??
 -  [ ] Store the JSON or TXT file per world/server
 -  [x] Make the containerInfo also contain the dimension in the id?
--  [ ] Read the JSON or parse the TXT
+-  [x] Read the JSON or parse the TXT
 -  [ ] Make commands to restart the world's JSON/TXT file? /chestforensics reset {tags}
 -  [ ] Make commands to ignore chests? /chestforensics ignore all?
 -  [ ] Implement the tag system (all opened containers have the "all" tag, they also have default tags for the dimension they are in)
