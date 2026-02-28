@@ -68,6 +68,7 @@ public class ChestForensicsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient(){
+        SetLoggingModeCommand.register();
         LOGGER.info("Chest Forensics Mod Initialized :D");
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if(loggingMode > 0)
