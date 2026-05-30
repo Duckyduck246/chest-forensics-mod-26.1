@@ -101,7 +101,9 @@ public abstract class ContainerDetectionMixin{
                         Component changesText = Component.literal("Detected Changes: ");
                         newText = Component.empty().append(containerText.copy()).append(changesText.copy()).append(newText.copy());
 
-                        client.player.displayClientMessage(newText, false);
+                        if (client.player != null) {
+                            client.player.sendSystemMessage(newText);
+                        }
                     }
                 }
             }

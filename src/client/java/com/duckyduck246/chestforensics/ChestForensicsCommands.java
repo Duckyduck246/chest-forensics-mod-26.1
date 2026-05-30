@@ -1,7 +1,7 @@
 package com.duckyduck246.chestforensics;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -13,8 +13,8 @@ public class ChestForensicsCommands {
     public static void register() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 dispatcher.register(
-                        ClientCommandManager.literal("chestforensics")
-                                .then(ClientCommandManager.literal("logmode")
+                        ClientCommands.literal("chestforensics")
+                                .then(ClientCommands.literal("logmode")
                                         .executes(context -> {
                                             reset = 0;
                                             int l = ChestForensicsClient.loggingMode;
@@ -23,7 +23,7 @@ public class ChestForensicsCommands {
                                             context.getSource().sendFeedback(feedback);
                                             return l;
                                         })
-                                        .then(ClientCommandManager.argument("mode", IntegerArgumentType.integer(0, 3))
+                                        .then(ClientCommands.argument("mode", IntegerArgumentType.integer(0, 3))
                                                 .executes(context -> {
                                                     reset = 0;
                                                     int level = IntegerArgumentType.getInteger(context, "mode");
@@ -35,8 +35,8 @@ public class ChestForensicsCommands {
                                                 })
                                         )
                                 )
-                                .then(ClientCommandManager.literal("reset")
-                                        .then(ClientCommandManager.literal("all")
+                                .then(ClientCommands.literal("reset")
+                                        .then(ClientCommands.literal("all")
                                                 .executes(context -> {
                                                     if(reset == 0) {
                                                         reset = 1;

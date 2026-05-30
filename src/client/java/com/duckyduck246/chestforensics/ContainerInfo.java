@@ -127,7 +127,7 @@ public class ContainerInfo {
                             ItemStack stack = handler.getSlot(a).getItem();
                             if (!(handler.getSlot(a).container instanceof Inventory)) {
                                 items.add(stack.copy());
-                                String nameOfItem = stack.getItem().getName().getString();
+                                String nameOfItem = stack.getHoverName().getString();
                                 String dataOfItem = stack.getComponents().toString();
                                 int count = stack.getCount();
                                 if(loggingMode > 2)
@@ -159,7 +159,7 @@ public class ContainerInfo {
                             ItemStack stack = handler.getSlot(a).getItem();
                             if (!(handler.getSlot(a).container instanceof Inventory)) {
                                 items.add(stack.copy());
-                                String nameOfItem = stack.getItem().getName().getString();
+                                String nameOfItem = stack.getHoverName().getString();
                                 String dataOfItem = stack.getComponents().toString();
                                 int count = stack.getCount();
                             }
