@@ -2,66 +2,65 @@ package com.duckyduck246.chestforensics.mixin;
 
 
 import com.duckyduck246.chestforensics.PuedoItem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.ItemStack;
 import com.duckyduck246.chestforensics.ChestForensicsClient;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.enums.ChestType;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.duckyduck246.chestforensics.ChestForensicsClient.detectedPos;
-import static com.duckyduck246.chestforensics.ChestForensicsClient.dimension;
+import static com.duckyduck246.chestforensics.ChestForensicsClient.*;
 
-@Mixin(ScreenHandler.class)
+@Mixin(AbstractContainerMenu.class)
 public abstract class ContainerDetectionMixin{
 
-    @Inject(method = "updateSlotStacks", at = @At("TAIL"))
+    @Inject(method = "initializeContents", at = @At("TAIL"))
     private void chestforensics$onUpdateAll(int revision, List<ItemStack> stacks, ItemStack cursorStack, CallbackInfo ci) {
         processBulkUpdate(stacks);
     }
 
-    @Inject(method = "setStackInSlot", at = @At("TAIL"))
+    @Inject(method = "setItem", at = @At("TAIL"))
     private void chestforensics$onSetStack(int slotIndex, int revision, ItemStack stack, CallbackInfo ci) {
         processSingleUpdate(slotIndex, stack);
     }
 
     private void processBulkUpdate(List<ItemStack> stacks){
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen instanceof HandledScreen<?> handledScreen){
-            if (handledScreen.getScreenHandler() instanceof GenericContainerScreenHandler container) {
-                int containerSize = container.getRows() * 9;
-                ChestForensicsClient.LOGGER.info("batch updates received for: " + containerSize + " slots");
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen instanceof AbstractContainerScreen<?> handledScreen){
+            if (handledScreen.getMenu() instanceof ChestMenu container) {
+                int containerSize = container.getRowCount() * 9;
+                if(loggingMode > 1)
+                    ChestForensicsClient.LOGGER.info("batch updates received for: " + containerSize + " slots");
                 for (int i = 0; i < Math.min(stacks.size(), containerSize); i++) {
                     ItemStack stack = stacks.get(i);
                     if (!stack.isEmpty()) {
-                        //ChestForensicsClient.LOGGER.info("Slot " + i + ": " + stack.getName().getString() + " x" + stack.getCount());
+                        if(loggingMode > 2)
+                            ChestForensicsClient.LOGGER.info("Slot " + i + ": " + stack.getHoverName().getString() + " x" + stack.getCount());
                     }
                 }
                 if(detectedPos == null){
-                    ChestForensicsClient.LOGGER.info("DETECTED POS IS NULL");
+                    if(loggingMode > 0)
+                        ChestForensicsClient.LOGGER.info("DETECTED POS IS NULL");
                     return;
                 }
                 ArrayList<PuedoItem> compare1 = ChestForensicsClient.getCompare();
                 for (int o = 0; o < compare1.size(); o++) {
                     String string = compare1.get(o).count + "x " + compare1.get(o).name;
-                    ChestForensicsClient.LOGGER.info("Compared: " + string);
+                    if(loggingMode > 1)
+                        ChestForensicsClient.LOGGER.info("Compared: " + string);
                     if(!compare1.get(o).isEmpty()){
                         int finalO = o;
 
@@ -69,40 +68,40 @@ public abstract class ContainerDetectionMixin{
                             string = "+" + string;
                         }
                         
-                        Text text = Text.literal(string);
-                        Text nbt = Text.literal(compare1.get(finalO).nbt);
+                        Component text = Component.literal(string);
+                        Component nbt = Component.literal(compare1.get(finalO).nbt);
 
-                        Text newText;
+                        Component newText;
                         if(compare1.get(o).count < 0){
-                            newText = text.copy().formatted(Formatting.RED, Formatting.BOLD);
+                            newText = text.copy().withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
                         }
                         else if(compare1.get(o).count > 0){
-                            newText = text.copy().formatted(Formatting.GREEN);
+                            newText = text.copy().withStyle(ChatFormatting.GREEN);
                         }
                         else{
-                            newText = text.copy().formatted(Formatting.GRAY);
+                            newText = text.copy().withStyle(ChatFormatting.GRAY);
                         }
-                        newText = newText.copy().styled(style -> style.withClickEvent(new ClickEvent.CopyToClipboard(nbt.toString())).withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy full NBT data to clipboard"))));
+                        newText = newText.copy().withStyle(style -> style.withClickEvent(new ClickEvent.CopyToClipboard(nbt.toString())).withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy full NBT data to clipboard"))));
+                        if(loggingMode > 1)
+                            ChestForensicsClient.LOGGER.info(compare1.get(o).name);
 
-                        ChestForensicsClient.LOGGER.info(compare1.get(o).name);
-
-                        Text containerText = Text.literal("Container ").formatted(Formatting.GRAY);
+                        Component containerText = Component.literal("Container ").withStyle(ChatFormatting.GRAY);
                         if(ChestForensicsClient.containerName.equals("Chest")){
-                           containerText = Text.literal("Chest ").formatted(Formatting.GOLD);
+                           containerText = Component.literal("Chest ").withStyle(ChatFormatting.GOLD);
                         }
                         if(ChestForensicsClient.containerName.equals("Barrel")){
-                           containerText = Text.literal("Barrel ").formatted(Formatting.YELLOW);
+                           containerText = Component.literal("Barrel ").withStyle(ChatFormatting.YELLOW);
                         }
                         if(ChestForensicsClient.containerName.equals("Large Chest")){
-                           containerText = Text.literal("Large Chest ").formatted(Formatting.GOLD);
+                           containerText = Component.literal("Large Chest ").withStyle(ChatFormatting.GOLD);
                         }
                         if(!(detectedPos == null)){
-                            containerText = containerText.copy().styled(style -> style.withHoverEvent(new HoverEvent.ShowText(Text.literal("Position: " + detectedPos + " Dimension: " + dimension + " Name: " + ChestForensicsClient.containerName))));
+                            containerText = containerText.copy().withStyle(style -> style.withHoverEvent(new HoverEvent.ShowText(Component.literal("Position: " + detectedPos + " Dimension: " + dimension + " Name: " + ChestForensicsClient.containerName))));
                         }
-                        Text changesText = Text.literal("Detected Changes: ");
-                        newText = Text.empty().append(containerText.copy()).append(changesText.copy()).append(newText.copy());
+                        Component changesText = Component.literal("Detected Changes: ");
+                        newText = Component.empty().append(containerText.copy()).append(changesText.copy()).append(newText.copy());
 
-                        client.player.sendMessage(newText, false);
+                        client.player.displayClientMessage(newText, false);
                     }
                 }
             }
@@ -110,12 +109,13 @@ public abstract class ContainerDetectionMixin{
     }
 
     private void processSingleUpdate(int slotIndex, ItemStack stack){
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen instanceof HandledScreen<?> handledScreen) {
-            if (handledScreen.getScreenHandler() instanceof GenericContainerScreenHandler container) {
-                int containerSize = container.getRows() * 9;
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen instanceof AbstractContainerScreen<?> handledScreen) {
+            if (handledScreen.getMenu() instanceof ChestMenu container) {
+                int containerSize = container.getRowCount() * 9;
                 if (slotIndex < containerSize) {
-                    ChestForensicsClient.LOGGER.info("single slot " + slotIndex + " update: " + stack.getName().getString());
+                    if(loggingMode > 1)
+                        ChestForensicsClient.LOGGER.info("single slot " + slotIndex + " update: " + stack.getHoverName().getString());
                 }
             }
         }

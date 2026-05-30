@@ -3,12 +3,10 @@ package com.duckyduck246.chestforensics;
 import com.google.gson.*;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.ArrayList;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.item.ItemStack;
 
 import static com.duckyduck246.chestforensics.ChestForensicsClient.loggingMode;
 
@@ -16,8 +14,8 @@ public class ForensicsNbt {
 
     public static ArrayList<String> toJsonString(ArrayList<ItemStack> stacks) {
         ArrayList<String> returned = new ArrayList<>();
-        var registryManager = MinecraftClient.getInstance().getNetworkHandler().getRegistryManager();
-        var ops = RegistryOps.of(JsonOps.INSTANCE, registryManager);
+        var registryManager = Minecraft.getInstance().getConnection().registryAccess();
+        var ops = RegistryOps.create(JsonOps.INSTANCE, registryManager);
         for (ItemStack stack : stacks) {
             DataResult<JsonElement> result = ItemStack.CODEC.encodeStart(ops, stack);
             result.result().ifPresentOrElse(
@@ -30,8 +28,8 @@ public class ForensicsNbt {
 
     public static ArrayList<ItemStack> fromJsonString(ArrayList<String> stringJson) {
         ArrayList<ItemStack> returned = new ArrayList<>();
-        var registryManager = MinecraftClient.getInstance().getNetworkHandler().getRegistryManager();
-        var ops = RegistryOps.of(JsonOps.INSTANCE, registryManager);
+        var registryManager = Minecraft.getInstance().getConnection().registryAccess();
+        var ops = RegistryOps.create(JsonOps.INSTANCE, registryManager);
         for (String jsonStr : stringJson) {
             try {
                 JsonElement element = JsonParser.parseString(jsonStr);
@@ -47,16 +45,16 @@ public class ForensicsNbt {
     }
     
     public static String toJsonString(ItemStack stack) {
-        var registryManager = MinecraftClient.getInstance().getNetworkHandler().getRegistryManager();
-        var ops = RegistryOps.of(JsonOps.INSTANCE, registryManager);
+        var registryManager = Minecraft.getInstance().getConnection().registryAccess();
+        var ops = RegistryOps.create(JsonOps.INSTANCE, registryManager);
         DataResult<JsonElement> result = ItemStack.CODEC.encodeStart(ops, stack);
         return result.result().map(e -> normalize(e.toString())).orElse("{}");
     }
 
     public static ItemStack fromJsonString(String stringJson) {
         try{
-            var registryManager = MinecraftClient.getInstance().getNetworkHandler().getRegistryManager();
-            var ops = RegistryOps.of(JsonOps.INSTANCE, registryManager);
+            var registryManager = Minecraft.getInstance().getConnection().registryAccess();
+            var ops = RegistryOps.create(JsonOps.INSTANCE, registryManager);
             JsonElement element = JsonParser.parseString(stringJson);
             DataResult<ItemStack> result = ItemStack.CODEC.parse(ops, element);
             return result.result().orElse(ItemStack.EMPTY);

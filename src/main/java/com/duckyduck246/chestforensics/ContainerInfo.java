@@ -3,39 +3,24 @@ package com.duckyduck246.chestforensics;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import net.fabricmc.api.ClientModInitializer;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.StringNbtReader;
-
 import com.duckyduck246.chestforensics.ChestForensicsClient;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Objects;
-
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
 import static com.duckyduck246.chestforensics.ChestForensicsClient.loggingMode;
 
@@ -107,7 +92,7 @@ public class ContainerInfo {
     }
     
     public void logInfo(){
-        if(loggingMode > 0) {
+        if(loggingMode > 1) {
             ChestForensicsClient.LOGGER.info("type: " + type);
             ChestForensicsClient.LOGGER.info("tags: " + tags);
             ChestForensicsClient.LOGGER.info("direction: " + dir);
@@ -116,7 +101,7 @@ public class ContainerInfo {
             ChestForensicsClient.LOGGER.info("pos: " + pos);
         }
         if(doubleChest){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 ChestForensicsClient.LOGGER.info("other pos: " + id);
         }
         if(loggingMode > 2)
@@ -124,23 +109,23 @@ public class ContainerInfo {
     }
     
     public void logTotal(){
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             ChestForensicsClient.LOGGER.info("" + total);
     }
 
     public static ArrayList<ItemStack> listItems(int mode){
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         switch(mode) {
             case 1:
-                if(client.player != null && client.player.currentScreenHandler != null) {
-                    if (client.currentScreen instanceof HandledScreen<?> handledScreen) {
-                        ScreenHandler handler = handledScreen.getScreenHandler();
+                if(client.player != null && client.player.containerMenu != null) {
+                    if (client.screen instanceof AbstractContainerScreen<?> handledScreen) {
+                        AbstractContainerMenu handler = handledScreen.getMenu();
                         ArrayList<ItemStack> items = new ArrayList<ItemStack>();
-                        if(loggingMode > 0)
+                        if(loggingMode > 1)
                             ChestForensicsClient.LOGGER.info("slots: " + handler.slots.size());
                         for (int a = 0; a < handler.slots.size(); a++) {
-                            ItemStack stack = handler.getSlot(a).getStack();
-                            if (!(handler.getSlot(a).inventory instanceof PlayerInventory)) {
+                            ItemStack stack = handler.getSlot(a).getItem();
+                            if (!(handler.getSlot(a).container instanceof Inventory)) {
                                 items.add(stack.copy());
                                 String nameOfItem = stack.getItem().getName().getString();
                                 String dataOfItem = stack.getComponents().toString();
@@ -151,7 +136,7 @@ public class ContainerInfo {
                             else {
                             }
                         }
-                        if(loggingMode > 0)
+                        if(loggingMode > 1)
                             ChestForensicsClient.LOGGER.info("returned items");
                         return items;
                     }
@@ -166,13 +151,13 @@ public class ContainerInfo {
                 }
                 break;
             case 2:
-                if(client.player != null && client.player.currentScreenHandler != null) {
-                    if (client.currentScreen instanceof HandledScreen<?> handledScreen) {
-                        ScreenHandler handler = handledScreen.getScreenHandler();
+                if(client.player != null && client.player.containerMenu != null) {
+                    if (client.screen instanceof AbstractContainerScreen<?> handledScreen) {
+                        AbstractContainerMenu handler = handledScreen.getMenu();
                         ArrayList<ItemStack> items = new ArrayList<ItemStack>();
                         for (int a = 0; a < handler.slots.size(); a++) {
-                            ItemStack stack = handler.getSlot(a).getStack();
-                            if (!(handler.getSlot(a).inventory instanceof PlayerInventory)) {
+                            ItemStack stack = handler.getSlot(a).getItem();
+                            if (!(handler.getSlot(a).container instanceof Inventory)) {
                                 items.add(stack.copy());
                                 String nameOfItem = stack.getItem().getName().getString();
                                 String dataOfItem = stack.getComponents().toString();
@@ -191,14 +176,14 @@ public class ContainerInfo {
     }
 
     public static ArrayList<PuedoItem> compareItems(ArrayList<ItemStack> oldStack, ArrayList<ItemStack> currentStack){
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             ChestForensicsClient.LOGGER.info("compareItems method called");
         ArrayList<PuedoItem> diff = new ArrayList<>();
         if(loggingMode > 2) {
             ChestForensicsClient.LOGGER.info("old contents: " + oldStack);
             ChestForensicsClient.LOGGER.info("new contents: " + currentStack);
         }
-        if(loggingMode > 0) {
+        if(loggingMode > 1) {
             ChestForensicsClient.LOGGER.info("old size: " + oldStack.size());
             ChestForensicsClient.LOGGER.info("new size: " + currentStack.size());
         }
@@ -215,16 +200,16 @@ public class ContainerInfo {
                     if (stackA.equals(stackB)) {
                         if(loggingMode > 2)
                             ChestForensicsClient.LOGGER.info("index: " + i);
-                        PuedoItem itemStack = new PuedoItem(itemStackB.getCount() - itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getName().getString(), stackA);
+                        PuedoItem itemStack = new PuedoItem(itemStackB.getCount() - itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getHoverName().getString(), stackA);
                         diff.add(itemStack);
                     } else {
                         if(loggingMode > 2) {
                             ChestForensicsClient.LOGGER.info("index: " + i);
                             ChestForensicsClient.LOGGER.info(itemStackB.getComponents().toString());
                         }
-                        PuedoItem itemStack1 = new PuedoItem(-itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getName().getString(), stackA);
+                        PuedoItem itemStack1 = new PuedoItem(-itemStackA.getCount(), itemStackA.getComponents(), itemStackA.getHoverName().getString(), stackA);
                         diff.add(itemStack1);
-                        PuedoItem itemStack2 = new PuedoItem(itemStackB.getCount(), itemStackB.getComponents(), itemStackB.getName().getString(), stackB);
+                        PuedoItem itemStack2 = new PuedoItem(itemStackB.getCount(), itemStackB.getComponents(), itemStackB.getHoverName().getString(), stackB);
                         diff.add(itemStack2);
                     }
                 }
@@ -252,11 +237,11 @@ public class ContainerInfo {
     }
     
     public static Identifier getDimension(){
-        MinecraftClient client = MinecraftClient.getInstance();
-        World world = client.world;
+        Minecraft client = Minecraft.getInstance();
+        Level world = client.level;
         if(world != null){
-            Identifier dimensionId = world.getRegistryKey().getValue();
-            if(loggingMode > 0)
+            Identifier dimensionId = world.dimension().identifier();
+            if(loggingMode > 1)
                 ChestForensicsClient.LOGGER.info("dimension: " + dimensionId);
             return dimensionId;
         }

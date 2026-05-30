@@ -4,6 +4,23 @@ import net.fabricmc.api.ClientModInitializer;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.ContainerEntity;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.phys.BlockHitResult;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,33 +29,10 @@ import java.nio.file.Files;
 import com.google.gson.reflect.TypeToken;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.vehicle.VehicleInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.item.ItemStack;
-
-import net.minecraft.screen.ScreenHandlerListener;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.WorldSavePath;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +53,7 @@ public class ChestForensicsClient implements ClientModInitializer {
     public static Identifier dimension;
     public static ArrayList<String> defaultTags = new ArrayList<>(List.of("all"));
     public static int loggingMode = 1;
+    public static String[] loggingDefine = {"No Logging", "Errors Only (default)", "Debug Logging", "Heavy Debug Logging (may cause lag)"};
     /*
     loggingMode 0: no logging except init;
     loggingMode 1: errors and init only;
@@ -66,12 +61,13 @@ public class ChestForensicsClient implements ClientModInitializer {
     loggingMode 3: all logging;
     */
 
+
     @Override
     public void onInitializeClient(){
-        SetLoggingModeCommand.register();
+        ChestForensicsCommands.register();
         LOGGER.info("Chest Forensics Mod Initialized :D");
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("loading container data");
             try {
                 loadContainersFromJSON();
@@ -82,74 +78,74 @@ public class ChestForensicsClient implements ClientModInitializer {
         });
         ScreenEvents.AFTER_INIT.register((minecraftClient, screen, i, i1) -> {
                 containerName = screen.getTitle().getString();
-                if (screen instanceof HandledScreen<?> handledScreen){
-                    if (!(minecraftClient.crosshairTarget instanceof BlockHitResult blockHit)) {
-                        if(loggingMode > 0)
+                if (screen instanceof AbstractContainerScreen<?> handledScreen){
+                    if (!(minecraftClient.hitResult instanceof BlockHitResult blockHit)) {
+                        if(loggingMode > 1)
                             LOGGER.info("may be opening an entity");
                         return;
                     }
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("DETECTED POS: " + detectedPos);
                     if(detectedPos == null){
                         if(loggingMode > 0)
                             LOGGER.info("DETECTED POS IS NULL");
                         return;
                     }
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("~~~CHEST OPENNENEND~~~");
-                    MinecraftClient client = MinecraftClient.getInstance();
+                    Minecraft client = Minecraft.getInstance();
                     containerName = screen.getTitle().getString();
-                    containerID = handledScreen.getScreenHandler().syncId;
-                    ScreenHandler handler = handledScreen.getScreenHandler();
+                    containerID = handledScreen.getMenu().containerId;
+                    AbstractContainerMenu handler = handledScreen.getMenu();
 
 
-                    if (!(handler instanceof GenericContainerScreenHandler)) {
-                        if(loggingMode > 0)
+                    if (!(handler instanceof ChestMenu)) {
+                        if(loggingMode > 1)
                             LOGGER.info("(handler instanceof GenericContainerScreenHandler)");
                         return;
                     }
 
-                    GenericContainerScreenHandler g = (GenericContainerScreenHandler) handler;
+                    ChestMenu g = (ChestMenu) handler;
 
-                    if (g.getInventory() instanceof VehicleInventory) {
-                        if(loggingMode > 0)
+                    if (g.getContainer() instanceof ContainerEntity) {
+                        if(loggingMode > 1)
                             LOGGER.info("Detected vehicle inventory (Chest Boat/Minecart)");
                         return;
                     }
 
-                    if (g.getInventory() instanceof Entity) {
-                        if(loggingMode > 0)
+                    if (g.getContainer() instanceof Entity) {
+                        if(loggingMode > 1)
                             LOGGER.info("may be opening an entity2");
                         return;
                     }
 
-                    net.minecraft.text.Text screenTitley = client.currentScreen.getTitle();
+                    net.minecraft.network.chat.Component screenTitley = client.screen.getTitle();
                     String keyThing = "";
-                    if (screenTitley.getContent() instanceof net.minecraft.text.TranslatableTextContent translatable) {
+                    if (screenTitley.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents translatable) {
                         keyThing = translatable.getKey();
                     }
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("title: " + keyThing);
                     dimension = ContainerInfo.getDimension();
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("dimension set: " + dimension);
 
                     ScreenEvents.remove(screen).register(closedScreen -> {
-                        if(loggingMode > 0) {
+                        if(loggingMode > 1) {
                             LOGGER.info("~~~CHEST CLOCLOLOSOSESESED~~~");
                             LOGGER.info("Name: " + containerName);
                             LOGGER.info("ID: " + containerID);
                         }
 
-                        if (getIfDoubleChest(client.world.getBlockEntity(detectedPos))) {
-                            if(loggingMode > 0)
+                        if (getIfDoubleChest(client.level.getBlockEntity(detectedPos))) {
+                            if(loggingMode > 1)
                                 LOGGER.info("is a large chest");
                             BlockPos mainContainer;
                             BlockPos subContainer;
-                            if (client.world != null) {
-                                mainContainer = getMainContainer(client.world.getBlockEntity(detectedPos));
-                                subContainer = getSubContainer(client.world.getBlockEntity(detectedPos));
-                                if(loggingMode > 0)
+                            if (client.level != null) {
+                                mainContainer = getMainContainer(client.level.getBlockEntity(detectedPos));
+                                subContainer = getSubContainer(client.level.getBlockEntity(detectedPos));
+                                if(loggingMode > 1)
                                     LOGGER.info("Pos" + mainContainer);
 
                                 addContainerInfo(containerName, mainContainer, ContainerInfo.listItems(2), defaultTags, subContainer, dimension);
@@ -161,7 +157,7 @@ public class ChestForensicsClient implements ClientModInitializer {
                             }
                         }
                         else {
-                            if(loggingMode > 0)
+                            if(loggingMode > 1)
                                 LOGGER.info("Pos" + detectedPos);
                             addContainerInfo(containerName, detectedPos, ContainerInfo.listItems(2), defaultTags, dimension);
                         }
@@ -179,18 +175,18 @@ public class ChestForensicsClient implements ClientModInitializer {
         ClientReceiveMessageEvents.CHAT.register((text, signedMessage, gameProfile, parameters, instant) -> {
             String message1 = text.getString();
             String sendername = gameProfile.name();
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("CHAT: " + message1);
-            MinecraftClient client = MinecraftClient.getInstance();
-            client.player.sendMessage(text, true);
+            Minecraft client = Minecraft.getInstance();
+            //client.player.sendMessage(text, true);
 
 
         ;});
     }
 
     public static void capturePos(){
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.crosshairTarget instanceof BlockHitResult blockHit){
+        Minecraft client = Minecraft.getInstance();
+        if (client.hitResult instanceof BlockHitResult blockHit){
             detectedPos = blockHit.getBlockPos();
         }
     }
@@ -240,25 +236,25 @@ public class ChestForensicsClient implements ClientModInitializer {
     }
 
     public static ArrayList<PuedoItem> getCompare(){
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         ArrayList<PuedoItem> compared = new ArrayList<>();
-        if (client.currentScreen instanceof HandledScreen<?> handledScreen) {
-            ScreenHandler handler = handledScreen.getScreenHandler();
+        if (client.screen instanceof AbstractContainerScreen<?> handledScreen) {
+            AbstractContainerMenu handler = handledScreen.getMenu();
             id = "ERROR 1389843204";
-            if(loggingMode > 0) {
+            if(loggingMode > 1) {
                 LOGGER.info("id set");
                 LOGGER.info("" + Objects.requireNonNull(detectedPos));
             }
 
 
-            if (getIfDoubleChest(client.world.getBlockEntity(detectedPos))) {
-                if(loggingMode > 0)
+            if (getIfDoubleChest(client.level.getBlockEntity(detectedPos))) {
+                if(loggingMode > 1)
                     LOGGER.info("is a large chest");
                 BlockPos mainContainer;
                 BlockPos subContainer;
-                if (client.world != null) {
-                    mainContainer = getMainContainer(client.world.getBlockEntity(detectedPos));
-                    subContainer = getSubContainer(client.world.getBlockEntity(detectedPos));
+                if (client.level != null) {
+                    mainContainer = getMainContainer(client.level.getBlockEntity(detectedPos));
+                    subContainer = getSubContainer(client.level.getBlockEntity(detectedPos));
                     id = ContainerInfo.getID(containerName, mainContainer, subContainer, dimension);
                 } else {
                     if(loggingMode > 0)
@@ -268,7 +264,7 @@ public class ChestForensicsClient implements ClientModInitializer {
             } else {
                 id = ContainerInfo.getID(containerName, detectedPos, dimension);
             }
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("got after geting id");
             for (int j = 0; j < allContainers.size(); j++) {
                 if (allContainers.get(j).id.equals(id)) {
@@ -303,7 +299,7 @@ public class ChestForensicsClient implements ClientModInitializer {
                 writer.write("ID: " + container.id  + "\n");
                 writer.write("\n\n");
             }
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("exported to da txt");
 
         }
@@ -321,7 +317,7 @@ public class ChestForensicsClient implements ClientModInitializer {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         String json = gson.toJson(allContainers);
         Files.writeString(file.toPath(), json);
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             LOGGER.info("saved allContainers to da json named: " + getWorldId() + "_allContainers.json");
     
     }
@@ -333,7 +329,7 @@ public class ChestForensicsClient implements ClientModInitializer {
         File file = configDir.resolve(getWorldId() + "_allContainers.json").toFile();
         
         if(!file.exists()){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("no saved container JSON found");
             return;
         }
@@ -342,92 +338,101 @@ public class ChestForensicsClient implements ClientModInitializer {
         ArrayList<ContainerInfo> loadedContainers = GSON.fromJson(json, new TypeToken<ArrayList<ContainerInfo>>() {}.getType());
         if(!(loadedContainers == null)){
             allContainers = loadedContainers;
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("loaded containers from json");
         }       
         else{
             if(loggingMode > 0)
                 LOGGER.info("failed to load containers from json");
         }
-        
-    
+
+
+    }
+
+    public static void deleteALLContainersInJSON() throws IOException {
+        ArrayList<ContainerInfo> emptyContainer;
+        emptyContainer = new ArrayList<ContainerInfo>();
+        allContainers = emptyContainer;
+        saveContainersToJSON();
+        if(loggingMode > 1)
+            LOGGER.info("deleted ALL CONTAINER INFO");
     }
 
     public static BlockPos getMainContainer(BlockEntity blockEntity){
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             LOGGER.info("getMainContainer method called");
         if (!(blockEntity instanceof ChestBlockEntity chest)){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("not a chest");
-            return blockEntity.getPos();
+            return blockEntity.getBlockPos();
         }
-        ChestType type = chest.getCachedState().get(ChestBlock.CHEST_TYPE);
+        ChestType type = chest.getBlockState().getValue(ChestBlock.TYPE);
         if (type == ChestType.SINGLE || type == ChestType.LEFT){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("single chest or left chest");
-            return chest.getPos();
+            return chest.getBlockPos();
         }
         if (type == ChestType.RIGHT){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("finnally is a right chest");
-            World world = chest.getWorld();
+            Level world = chest.getLevel();
             if (world != null){
-                Direction chestFacing = chest.getCachedState().get(ChestBlock.FACING);
+                Direction chestFacing = chest.getBlockState().getValue(ChestBlock.FACING);
                 BlockPos neighbor;
-                if(loggingMode > 0)
-                    LOGGER.info(chestFacing.asString());
+                if(loggingMode > 1)
+                    LOGGER.info(chestFacing.getSerializedName());
                 switch(chestFacing){
                     case NORTH: 
-                        neighbor = chest.getPos().west();
+                        neighbor = chest.getBlockPos().west();
                         break;
                     case SOUTH:
-                        neighbor = chest.getPos().east();
+                        neighbor = chest.getBlockPos().east();
                         break;
                     case WEST:
-                        neighbor = chest.getPos().south();
+                        neighbor = chest.getBlockPos().south();
                         break;
                     case EAST:
-                        neighbor = chest.getPos().north();
+                        neighbor = chest.getBlockPos().north();
                         break;
                     default:
-                        neighbor = chest.getPos().up();
+                        neighbor = chest.getBlockPos().above();
                         break;
                 }
                 BlockEntity neighborEntity = world.getBlockEntity(neighbor);
                 if (neighborEntity instanceof ChestBlockEntity neighborChest){
-                    ChestType neighborType = neighborChest.getCachedState().get(ChestBlock.CHEST_TYPE);
+                    ChestType neighborType = neighborChest.getBlockState().getValue(ChestBlock.TYPE);
                     if (neighborType == ChestType.LEFT){
-                        if(loggingMode > 0)
+                        if(loggingMode > 1)
                             LOGGER.info("neighbor is a left chest, returning pos");
-                        return neighborChest.getPos();
+                        return neighborChest.getBlockPos();
                     }
                     else{
-                        if(loggingMode > 0)
-                            LOGGER.info("neighbor not a left chest? they were: " + neighborType.asString());
+                        if(loggingMode > 1)
+                            LOGGER.info("neighbor not a left chest? they were: " + neighborType.getSerializedName());
                     }
                 }
                 else{
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("neighbor not a chest?");
                 }
             }
         }
 
-        return blockEntity.getPos();
+        return blockEntity.getBlockPos();
     }
 
 
     public static boolean getIfDoubleChest(BlockEntity blockEntity){
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             LOGGER.info("getIfDoubleChest method called");
         if (!(blockEntity instanceof ChestBlockEntity chest)){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("not a chest");
             return false;
         }
-        ChestType type = chest.getCachedState().get(ChestBlock.CHEST_TYPE);
+        ChestType type = chest.getBlockState().getValue(ChestBlock.TYPE);
         if (type == ChestType.SINGLE){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("single chest");
             return false;
         }
@@ -437,74 +442,81 @@ public class ChestForensicsClient implements ClientModInitializer {
     }
 
     public static BlockPos getSubContainer(BlockEntity blockEntity){
-        if(loggingMode > 0)
+        if(loggingMode > 1)
             LOGGER.info("getSubContainer method called");
         if (!(blockEntity instanceof ChestBlockEntity chest)){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("not a chest...");
-            return blockEntity.getPos();
+            return blockEntity.getBlockPos();
         }
-        ChestType type = chest.getCachedState().get(ChestBlock.CHEST_TYPE);
+        ChestType type = chest.getBlockState().getValue(ChestBlock.TYPE);
         if (type == ChestType.SINGLE || type == ChestType.RIGHT){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("single chest or right chest");
-            return chest.getPos();
+            return chest.getBlockPos();
         }
         if (type == ChestType.LEFT){
-            if(loggingMode > 0)
+            if(loggingMode > 1)
                 LOGGER.info("finally is a left chest");
-            World world = chest.getWorld();
+            Level world = chest.getLevel();
             if (world != null){
-                Direction chestFacing = chest.getCachedState().get(ChestBlock.FACING);
+                Direction chestFacing = chest.getBlockState().getValue(ChestBlock.FACING);
                 BlockPos neighbor;
-                if(loggingMode > 0)
-                    LOGGER.info(chestFacing.asString());
+                if(loggingMode > 1)
+                    LOGGER.info(chestFacing.getSerializedName());
                 switch(chestFacing){
                     case SOUTH:
-                        neighbor = chest.getPos().west();
+                        neighbor = chest.getBlockPos().west();
                         break;
                     case NORTH:
-                        neighbor = chest.getPos().east();
+                        neighbor = chest.getBlockPos().east();
                         break;
                     case EAST:
-                        neighbor = chest.getPos().south();
+                        neighbor = chest.getBlockPos().south();
                         break;
                     case WEST:
-                        neighbor = chest.getPos().north();
+                        neighbor = chest.getBlockPos().north();
                         break;
                     default:
-                        neighbor = chest.getPos().up();
+                        neighbor = chest.getBlockPos().above();
                         break;
                 }
                 BlockEntity neighborEntity = world.getBlockEntity(neighbor);
                 if (neighborEntity instanceof ChestBlockEntity neighborChest){
-                    ChestType neighborType = neighborChest.getCachedState().get(ChestBlock.CHEST_TYPE);
+                    ChestType neighborType = neighborChest.getBlockState().getValue(ChestBlock.TYPE);
                     if (neighborType == ChestType.RIGHT){
-                        if(loggingMode > 0)
+                        if(loggingMode > 1)
                             LOGGER.info("neighbor is a right chest, returning pos");
-                        return neighborChest.getPos();
+                        return neighborChest.getBlockPos();
                     }
                     else{
-                        if(loggingMode > 0)
-                            LOGGER.info("neighbor not a right chest? they were: " + neighborType.asString());
+                        if(loggingMode > 1)
+                            LOGGER.info("neighbor not a right chest? they were: " + neighborType.getSerializedName());
                     }
                 }
                 else{
-                    if(loggingMode > 0)
+                    if(loggingMode > 1)
                         LOGGER.info("neighbor not a chest??");
                 }
             }
         }
 
-        return blockEntity.getPos();
+        return blockEntity.getBlockPos();
     }
 
     public static String getWorldId() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.isInSingleplayer()) {
-            return client.getServer().getSavePath(WorldSavePath.ROOT).getParent().getFileName().toString();
-        } else if (client.getCurrentServerEntry() != null) {
-            return client.getCurrentServerEntry().address.replace(":", "_").replace("/", "_");
+        Minecraft client = Minecraft.getInstance();
+        if (client.isLocalServer()) {
+            return client.getSingleplayerServer()
+
+
+
+
+
+
+                    .getWorldPath(LevelResource.ROOT).getParent().getFileName().toString();
+        } else if (client.getCurrentServer() != null) {
+            return client.getCurrentServer().ip.replace(":", "_").replace("/", "_");
         }
         return "idk_either_man";
     }
