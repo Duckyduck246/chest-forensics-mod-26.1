@@ -1,13 +1,14 @@
 **HOW TO USE THE COMMANDS:**   
-/chestforensics export - exports all the current world's stored container data 
-/chestforensics reset - resets all the current world's stored container data 
-/chestforensics debuglogmode (logmode) - sets the debug log mode: 
-0 - No Logging 
-1 - Errors Only (default) 
-2 - Debug Logging 
-3 - Heavy Debug Logging (may cause lag) 
-
-
+/chestforensics export - exports all the current world's stored container data  
+/chestforensics reset - resets all the current world's stored container data  
+/chestforensics debuglogmode (logmode) - sets the debug log mode:  
+0 - No Logging  
+1 - Errors Only (default)  
+2 - Debug Logging  
+3 - Heavy Debug Logging (may cause lag)    
+   
+      
+  
 
 its still work in progress
 
