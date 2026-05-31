@@ -1,6 +1,6 @@
 **HOW TO USE THE COMMANDS:**   
 /chestforensics export - exports all the current world's stored container data  
-/chestforensics reset - resets all the current world's stored container data  
+/chestforensics reset (tags) - resets the current world's stored container data with a certain tag (all = all the world's data) 
 /chestforensics debuglogmode (logmode) - sets the debug log mode:  
 0 - No Logging  
 1 - Errors Only (default)  
