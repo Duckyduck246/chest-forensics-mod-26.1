@@ -48,7 +48,10 @@ public class ForensicsNbt {
         var registryManager = Minecraft.getInstance().getConnection().registryAccess();
         var ops = RegistryOps.create(JsonOps.INSTANCE, registryManager);
         DataResult<JsonElement> result = ItemStack.CODEC.encodeStart(ops, stack);
-        return result.result().map(e -> normalize(e.toString())).orElse("{}");
+        String output = result.result().map(e -> normalize(e.toString())).orElse("{}");
+        if (loggingMode > 1)
+            ChestForensicsClient.LOGGER.info("successfully converted: " + stack + " to json " + output);
+        return output;
     }
 
     public static ItemStack fromJsonString(String stringJson) {
@@ -59,10 +62,11 @@ public class ForensicsNbt {
             DataResult<ItemStack> result = ItemStack.CODEC.parse(ops, element);
             return result.result().orElse(ItemStack.EMPTY);
             
-        } catch(Exception e){}
-        if(loggingMode > 0)
-            ChestForensicsClient.LOGGER.info("failed to get itemstack from json string");
-        return ItemStack.EMPTY;
+        } catch(Exception e) {
+            if (loggingMode > 0)
+                ChestForensicsClient.LOGGER.info("failed to get itemstack from json string, exception: " + e);
+            return ItemStack.EMPTY;
+        }
     }
     public static String normalize(String json){
         JsonElement root = JsonParser.parseString(json);

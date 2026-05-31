@@ -52,7 +52,7 @@ public class ChestForensicsCommands {
                                                         } catch (IOException e) {
                                                             throw new RuntimeException(e);
                                                         }
-                                                        
+
                                                         Component text = Component.literal("All container information from this world has been deleted");
                                                         Component feedback = text.copy().withStyle(ChatFormatting.YELLOW);
                                                         context.getSource().sendFeedback(feedback);
@@ -64,12 +64,17 @@ public class ChestForensicsCommands {
                                 )
                                 .then(ClientCommands.literal("export")
                                         .executes(context -> {
-                                                if(ChestForensicsClient.exportContainersToTXT()) {
-                                                    return 1;
-                                                }
-                                                else {
+                                                String export = ChestForensicsClient.exportContainersToTXT();
+                                                if(export.isEmpty()) {
                                                     return 0;
                                                 }
+                                                else {
+                                                    Component exportText = Component.literal("All container information from this world has been exported to: " + export);
+                                                    Component feedback = exportText.copy().withStyle(ChatFormatting.GREEN);
+                                                    context.getSource().sendFeedback(feedback);
+                                                    return 1;
+                                                }
+
                                         })
                                 )
                 );

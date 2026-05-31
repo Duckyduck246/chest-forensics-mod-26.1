@@ -5,6 +5,7 @@ import com.duckyduck246.chestforensics.ChestForensicsClient;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ public class PuedoItem {
         if(loggingMode > 2)
             ChestForensicsClient.LOGGER.info("new PuedoItem created: count: " + c + "componets: " + m + "nbt: " + a);
     }
-    public String getString(){
+    public String toString(){
         return count + "x " + name +  "            " + itemComponents.toString() + "             " + nbt;
     }
     public Boolean isEmpty(){

@@ -310,16 +310,16 @@ public class ChestForensicsClient implements ClientModInitializer {
         }
     }
 
-    public static boolean exportContainersToTXT(){
+    public static String exportContainersToTXT(){
         try {
             saveContainersToJSON();
         } catch (Exception e) {
             if(loggingMode > 0)
                 LOGGER.info("broke; not exported to da txt");
-            return(false);
+            return("");
         }
-        Path configDir = FabricLoader.getInstance().getGameDir().resolve("chest-forensics-exports");
-        File file = configDir.resolve(getWorldId() + "-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS")) + ".txt").toFile();
+        Path directory = FabricLoader.getInstance().getGameDir().resolve("chest-forensics-exports");
+        File file = directory.resolve(getWorldId() + "-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS")) + ".txt").toFile();
         file.getParentFile().mkdirs();
         try(FileWriter writer = new FileWriter(file, false)){
             writer.write("Chest Forensics Export\n");
@@ -333,13 +333,13 @@ public class ChestForensicsClient implements ClientModInitializer {
             }
             if(loggingMode > 1)
                 LOGGER.info("exported to da txt");
-            return(true);
+            return(directory.toString());
 
         }
         catch (IOException e){
             if(loggingMode > 0)
                 LOGGER.info("broke; not exported to da txt");
-            return(false);
+            return("");
         }
     }
     
