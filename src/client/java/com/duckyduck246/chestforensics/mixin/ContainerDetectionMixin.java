@@ -85,7 +85,9 @@ public abstract class ContainerDetectionMixin{
                         if(loggingMode > 1)
                             ChestForensicsClient.LOGGER.info(compare1.get(o).name);
 
-                        Component containerText = Component.literal("Container ").withStyle(ChatFormatting.GRAY);
+                        //Component containerText = Component.literal("Container ").withStyle(ChatFormatting.GRAY);
+                        Component containerText = Component.literal(ChestForensicsClient.containerName + " ").withStyle(ChatFormatting.GRAY);
+
                         if(ChestForensicsClient.containerName.equals("Chest")){
                            containerText = Component.literal("Chest ").withStyle(ChatFormatting.GOLD);
                         }

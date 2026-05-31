@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -161,7 +162,7 @@ public class ChestForensicsClient implements ClientModInitializer {
                                 LOGGER.info("Pos" + detectedPos);
                             addContainerInfo(containerName, detectedPos, ContainerInfo.listItems(2), defaultTags, dimension);
                         }
-                        saveContainersToTXT();
+                        //saveContainersToTXT();
 
 
                         detectedPos = null;
@@ -306,6 +307,39 @@ public class ChestForensicsClient implements ClientModInitializer {
         catch (IOException e){
             if(loggingMode > 0)
                 LOGGER.info("broke; not exported to da txt");
+        }
+    }
+
+    public static boolean exportContainersToTXT(){
+        try {
+            saveContainersToJSON();
+        } catch (Exception e) {
+            if(loggingMode > 0)
+                LOGGER.info("broke; not exported to da txt");
+            return(false);
+        }
+        Path configDir = FabricLoader.getInstance().getGameDir().resolve("chest-forensics-exports");
+        File file = configDir.resolve(getWorldId() + "-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS")) + ".txt").toFile();
+        file.getParentFile().mkdirs();
+        try(FileWriter writer = new FileWriter(file, false)){
+            writer.write("Chest Forensics Export\n");
+            writer.write("World: " + getWorldId() + "\n");
+            writer.write("Updated: " + java.time.LocalDateTime.now() + "\n\n");
+            for(ContainerInfo container : allContainers){
+                writer.write("Container Type: " + container.type  + "\n");
+                writer.write("Pos: " + container.pos  + "\n");
+                writer.write("ID: " + container.id  + "\n");
+                writer.write("\n\n");
+            }
+            if(loggingMode > 1)
+                LOGGER.info("exported to da txt");
+            return(true);
+
+        }
+        catch (IOException e){
+            if(loggingMode > 0)
+                LOGGER.info("broke; not exported to da txt");
+            return(false);
         }
     }
     

@@ -14,7 +14,7 @@ public class ChestForensicsCommands {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 dispatcher.register(
                         ClientCommands.literal("chestforensics")
-                                .then(ClientCommands.literal("logmode")
+                                .then(ClientCommands.literal("debuglogmode")
                                         .executes(context -> {
                                             reset = 0;
                                             int l = ChestForensicsClient.loggingMode;
@@ -61,6 +61,16 @@ public class ChestForensicsCommands {
                                                     return reset;
                                                 })
                                         )
+                                )
+                                .then(ClientCommands.literal("export")
+                                        .executes(context -> {
+                                                if(ChestForensicsClient.exportContainersToTXT()) {
+                                                    return 1;
+                                                }
+                                                else {
+                                                    return 0;
+                                                }
+                                        })
                                 )
                 );
         });
